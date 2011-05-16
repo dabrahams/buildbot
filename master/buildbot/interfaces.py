@@ -1119,8 +1119,8 @@ class IRenderable(Interface):
     """An object that can be interpolated with properties from a build.
     """
 
-    def render(properties):
+    def render(build_step):
         """Return the interpolation with the given properties
 
-        @param pmap: a L{Properties} instance containing the properties to interpolate.
+        @param build_step: a L{BuildStep} instance of the step where interpolation is being done.
         """

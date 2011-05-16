@@ -193,12 +193,11 @@ class _TransferBuildStep(BuildStep):
             self.workdir = workdir
 
     def _getWorkdir(self):
-        properties = self.build.getProperties()
         if self.workdir is None:
             workdir = self.DEFAULT_WORKDIR
         else:
             workdir = self.workdir
-        return properties.render(workdir)
+        return self.render(workdir)
 
     def interrupt(self, reason):
         self.addCompleteLog('interrupt', str(reason))
@@ -262,14 +261,13 @@ class FileUpload(_TransferBuildStep):
 
     def start(self):
         version = self.slaveVersion("uploadFile")
-        properties = self.build.getProperties()
 
         if not version:
             m = "slave is too old, does not know about uploadFile"
             raise BuildSlaveTooOldError(m)
 
-        source = properties.render(self.slavesrc)
-        masterdest = properties.render(self.masterdest)
+        source = self.render(self.slavesrc)
+        masterdest = self.render(self.masterdest)
         # we rely upon the fact that the buildmaster runs chdir'ed into its
         # basedir to make sure that relative paths in masterdest are expanded
         # properly. TODO: maybe pass the master's basedir all the way down
@@ -338,14 +336,13 @@ class DirectoryUpload(BuildStep):
 
     def start(self):
         version = self.slaveVersion("uploadDirectory")
-        properties = self.build.getProperties()
 
         if not version:
             m = "slave is too old, does not know about uploadDirectory"
             raise BuildSlaveTooOldError(m)
 
-        source = properties.render(self.slavesrc)
-        masterdest = properties.render(self.masterdest)
+        source = self.render(self.slavesrc)
+        masterdest = self.render(self.masterdest)
         # we rely upon the fact that the buildmaster runs chdir'ed into its
         # basedir to make sure that relative paths in masterdest are expanded
         # properly. TODO: maybe pass the master's basedir all the way down
@@ -476,8 +473,8 @@ class FileDownload(_TransferBuildStep):
 
         # we are currently in the buildmaster's basedir, so any non-absolute
         # paths will be interpreted relative to that
-        source = os.path.expanduser(properties.render(self.mastersrc))
-        slavedest = properties.render(self.slavedest)
+        source = os.path.expanduser(self.render(self.mastersrc))
+        slavedest = self.render(self.slavedest)
         log.msg("FileDownload started, from master %r to slave %r" %
                 (source, slavedest))
 
@@ -555,8 +552,6 @@ class StringDownload(_TransferBuildStep):
         self.mode = mode
 
     def start(self):
-        properties = self.build.getProperties()
-
         version = self.slaveVersion("downloadFile")
         if not version:
             m = "slave is too old, does not know about downloadFile"
@@ -564,14 +559,14 @@ class StringDownload(_TransferBuildStep):
 
         # we are currently in the buildmaster's basedir, so any non-absolute
         # paths will be interpreted relative to that
-        slavedest = properties.render(self.slavedest)
+        slavedest = self.render(self.slavedest)
         log.msg("StringDownload started, from master to slave %r" % slavedest)
 
         self.step_status.setText(['downloading', "to",
                                   os.path.basename(slavedest)])
 
         # setup structures for reading the file
-        fp = StringIO(properties.render(self.s))
+        fp = StringIO(self.render(self.s))
         fileReader = _FileReader(fp)
 
         # default arguments

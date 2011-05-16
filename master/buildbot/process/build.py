@@ -76,6 +76,13 @@ class Build:
 
         self._acquiringLock = None
 
+    def render(self, value):
+        """
+        Return a variant of value that has any WithProperties objects
+        substituted.  This recurses into Python's compound data types.
+        """
+        return interfaces.IRenderable(value).render(self)
+
     def setBuilder(self, builder):
         """
         Set the given builder as our builder.

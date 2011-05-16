@@ -127,6 +127,9 @@ class Properties(util.ComparableMixin):
         """
         return IRenderable(value).render(self)
 
+    def getProperties(self):
+        return self
+
 class PropertyMap:
     """
     Privately-used mapping object to implement WithProperties' substitutions,
@@ -223,8 +226,8 @@ class WithProperties(util.ComparableMixin):
         elif lambda_subs:
             raise ValueError('WithProperties takes either positional or keyword substitutions, not both.')
 
-    def render(self, properties):
-        pmap = properties.pmap
+    def render(self, context):
+        pmap = context.getProperties().pmap
         if self.args:
             strings = []
             for name in self.args:
@@ -232,7 +235,7 @@ class WithProperties(util.ComparableMixin):
             s = self.fmtstring % tuple(strings)
         else:
             for k,v in self.lambda_subs.iteritems():
-                pmap.add_temporary_value(k, v(properties))
+                pmap.add_temporary_value(k, v(context))
             s = self.fmtstring % pmap
             pmap.clear_temporary_values()
         return s
@@ -259,11 +262,11 @@ class Property(util.ComparableMixin):
         self.default = default
         self.defaultWhenFalse = defaultWhenFalse
 
-    def render(self, properties):
+    def render(self, build_step):
         if self.defaultWhenFalse:
-            return properties.getProperty(self.key) or self.default
+            return build_step.getProperty(self.key) or self.default
         else:
-            return properties.getProperty(self.key, default=self.default)
+            return build_step.getProperty(self.key, default=self.default)
 
 
 class _DefaultRenderer:
@@ -280,15 +283,15 @@ class _DefaultRenderer:
         except AttributeError:
             self.renderer = lambda _: value
 
-    def render(self, properties):
-        return self.renderer(properties)
+    def render(self, build_step):
+        return self.renderer(build_step)
 
 registerAdapter(_DefaultRenderer, object, IRenderable)
 
 
 class _ListRenderer:
     """
-    List IRenderable adaptor. Maps Properties.render over the list.
+    List IRenderable adaptor. Maps build_step.render over the list.
     """
 
     implements(IRenderable)
@@ -296,15 +299,15 @@ class _ListRenderer:
     def __init__(self, value):
         self.value = value
 
-    def render(self, properties):
-        return [ properties.render(e) for e in self.value ]
+    def render(self, build_step):
+        return [ build_step.render(e) for e in self.value ]
 
 registerAdapter(_ListRenderer, list, IRenderable)
 
 
 class _TupleRenderer:
     """
-    Tuple IRenderable adaptor. Maps Properties.render over the tuple.
+    Tuple IRenderable adaptor. Maps build_step.render over the tuple.
     """
 
     implements(IRenderable)
@@ -312,15 +315,15 @@ class _TupleRenderer:
     def __init__(self, value):
         self.value = value
 
-    def render(self, properties):
-        return tuple([ properties.render(e) for e in self.value ])
+    def render(self, build_step):
+        return tuple([ build_step.render(e) for e in self.value ])
 
 registerAdapter(_TupleRenderer, tuple, IRenderable)
 
 
 class _DictRenderer:
     """
-    Dict IRenderable adaptor. Maps Properties.render over the keya and values in the dict.
+    Dict IRenderable adaptor. Maps build_step.render over the keya and values in the dict.
     """
 
     implements(IRenderable)
@@ -328,8 +331,8 @@ class _DictRenderer:
     def __init__(self, value):
         self.value = value
 
-    def render(self, properties):
-        return dict([ (properties.render(k), properties.render(v)) for k,v in self.value.iteritems() ])
+    def render(self, build_step):
+        return dict([ (build_step.render(k), build_step.render(v)) for k,v in self.value.iteritems() ])
 
 
 registerAdapter(_DictRenderer, dict, IRenderable)

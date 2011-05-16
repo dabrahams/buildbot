@@ -115,8 +115,7 @@ class RemoteCommand(pb.Referenceable):
         cmd_args = self.args
         if cmd_args.has_key("logfiles") and cmd_args["logfiles"]:
             cmd_args = cmd_args.copy()
-            properties = self.step.build.getProperties()
-            cmd_args["logfiles"] = properties.render(cmd_args["logfiles"])
+            cmd_args["logfiles"] = self.step.render(cmd_args["logfiles"])
 
         # This method only initiates the remote command.
         # We will receive remote_update messages as the command runs.
@@ -125,6 +124,13 @@ class RemoteCommand(pb.Referenceable):
         d = self.remote.callRemote("startCommand", self, self.commandID,
                                    self.remote_command, cmd_args)
         return d
+
+    def render(self, value):
+        """
+        Return a variant of value that has any WithProperties objects
+        substituted.  This recurses into Python's compound data types.
+        """
+        return interfaces.IRenderable(value).render(self)
 
     def interrupt(self, why):
         # TODO: consider separating this into interrupt() and stop(), where
@@ -681,6 +687,9 @@ class BuildStep:
         some metric."""
         if self.progress:
             self.progress.setProgress(metric, value)
+
+    def getProperties(self):
+        return self.build.getProperties()
 
     def getProperty(self, propname):
         return self.build.getProperty(propname)
